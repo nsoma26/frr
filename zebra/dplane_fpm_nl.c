@@ -951,6 +951,9 @@ static void fpm_connect(struct event *t)
  */
 static int fpm_nl_enqueue(struct fpm_nl_ctx *fnc, struct zebra_dplane_ctx *ctx)
 {
+	const struct netlink_encode_options opts = {
+		.nlmsg_pid = dplane_ctx_get_ns(ctx)->nlmsg_pid,
+	};
 	uint8_t nl_buf[DPLANE_FPM_NL_BUF_SIZE];
 	size_t nl_buf_len;
 	ssize_t rv;
@@ -978,10 +981,8 @@ static int fpm_nl_enqueue(struct fpm_nl_ctx *fnc, struct zebra_dplane_ctx *ctx)
 	switch (op) {
 	case DPLANE_OP_ROUTE_UPDATE:
 	case DPLANE_OP_ROUTE_DELETE:
-		rv = netlink_route_multipath_msg_encode(RTM_DELROUTE, ctx,
-							nl_buf, sizeof(nl_buf),
-							true, fnc->use_nhg,
-							false);
+		rv = netlink_route_multipath_msg_encode(RTM_DELROUTE, ctx, nl_buf, sizeof(nl_buf),
+							&opts, true, fnc->use_nhg, false);
 		if (rv <= 0) {
 			flog_err(EC_ZEBRA_FPM_ENCODE_FAIL,
 				 "%s: netlink_route_multipath_msg_encode failed", __func__);
@@ -997,12 +998,9 @@ static int fpm_nl_enqueue(struct fpm_nl_ctx *fnc, struct zebra_dplane_ctx *ctx)
 
 		fallthrough;
 	case DPLANE_OP_ROUTE_INSTALL:
-		rv = netlink_route_multipath_msg_encode(RTM_NEWROUTE, ctx,
-							&nl_buf[nl_buf_len],
-							sizeof(nl_buf) -
-								nl_buf_len,
-							true, fnc->use_nhg,
-							fnc->use_route_replace);
+		rv = netlink_route_multipath_msg_encode(RTM_NEWROUTE, ctx, &nl_buf[nl_buf_len],
+							sizeof(nl_buf) - nl_buf_len, &opts, true,
+							fnc->use_nhg, fnc->use_route_replace);
 		if (rv <= 0) {
 			flog_err(EC_ZEBRA_FPM_ENCODE_FAIL,
 				 "%s: netlink_route_multipath_msg_encode failed", __func__);
@@ -1027,8 +1025,8 @@ static int fpm_nl_enqueue(struct fpm_nl_ctx *fnc, struct zebra_dplane_ctx *ctx)
 		break;
 
 	case DPLANE_OP_NH_DELETE:
-		rv = netlink_nexthop_msg_encode(RTM_DELNEXTHOP, ctx, nl_buf,
-						sizeof(nl_buf), true);
+		rv = netlink_nexthop_msg_encode(RTM_DELNEXTHOP, ctx, &opts, nl_buf, sizeof(nl_buf),
+						true);
 		if (rv <= 0) {
 			flog_err(EC_ZEBRA_FPM_ENCODE_FAIL, "%s: netlink_nexthop_msg_encode failed",
 				 __func__);
@@ -1041,8 +1039,8 @@ static int fpm_nl_enqueue(struct fpm_nl_ctx *fnc, struct zebra_dplane_ctx *ctx)
 
 	case DPLANE_OP_NH_INSTALL:
 	case DPLANE_OP_NH_UPDATE:
-		rv = netlink_nexthop_msg_encode(RTM_NEWNEXTHOP, ctx, nl_buf,
-						sizeof(nl_buf), true);
+		rv = netlink_nexthop_msg_encode(RTM_NEWNEXTHOP, ctx, &opts, nl_buf, sizeof(nl_buf),
+						true);
 		if (rv <= 0) {
 			flog_err(EC_ZEBRA_FPM_ENCODE_FAIL, "%s: netlink_nexthop_msg_encode failed",
 				 __func__);

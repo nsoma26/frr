@@ -47,16 +47,20 @@ extern "C" {
 
 void rt_netlink_init(void);
 
+/* Netlink header data required when building a message. */
+struct netlink_encode_options {
+	uint32_t nlmsg_pid;
+};
+
 /* MPLS label forwarding table change, using dataplane context information. */
-extern ssize_t netlink_mpls_multipath_msg_encode(int cmd,
-						 struct zebra_dplane_ctx *ctx,
+extern ssize_t netlink_mpls_multipath_msg_encode(int cmd, struct zebra_dplane_ctx *ctx,
+						 const struct netlink_encode_options *opts,
 						 void *buf, size_t buflen);
 
-extern ssize_t netlink_route_multipath_msg_encode(int cmd,
-						  struct zebra_dplane_ctx *ctx,
+extern ssize_t netlink_route_multipath_msg_encode(int cmd, struct zebra_dplane_ctx *ctx,
 						  uint8_t *data, size_t datalen,
-						  bool fpm, bool force_nhg,
-						  bool force_rr);
+						  const struct netlink_encode_options *opts,
+						  bool fpm, bool force_nhg, bool force_rr);
 extern ssize_t netlink_macfdb_update_ctx(struct zebra_dplane_ctx *ctx,
 					 void *data, size_t datalen);
 
@@ -74,9 +78,9 @@ int netlink_route_notify_read_ctx(struct nlmsghdr *h, ns_id_t ns_id,
 
 extern int netlink_nexthop_change(struct nlmsghdr *h, ns_id_t ns_id, int startup, void *arg);
 extern int netlink_nexthop_read(struct zebra_ns *zns);
-extern ssize_t netlink_nexthop_msg_encode(uint16_t cmd,
-					  const struct zebra_dplane_ctx *ctx,
-					  void *buf, size_t buflen, bool fpm);
+extern ssize_t netlink_nexthop_msg_encode(uint16_t cmd, const struct zebra_dplane_ctx *ctx,
+					  const struct netlink_encode_options *opts, void *buf,
+					  size_t buflen, bool fpm);
 
 extern ssize_t netlink_lsp_msg_encoder(struct zebra_dplane_ctx *ctx, void *buf,
 				       size_t buflen);

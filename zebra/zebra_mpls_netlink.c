@@ -20,6 +20,9 @@
 ssize_t netlink_lsp_msg_encoder(struct zebra_dplane_ctx *ctx, void *buf,
 				size_t buflen)
 {
+	const struct netlink_encode_options opts = {
+		.nlmsg_pid = dplane_ctx_get_ns(ctx)->nlmsg_pid,
+	};
 	int cmd;
 
 	/* Call to netlink layer based on type of update */
@@ -41,7 +44,7 @@ ssize_t netlink_lsp_msg_encoder(struct zebra_dplane_ctx *ctx, void *buf,
 		/* Invalid op? */
 		return -1;
 
-	return netlink_mpls_multipath_msg_encode(cmd, ctx, buf, buflen);
+	return netlink_mpls_multipath_msg_encode(cmd, ctx, &opts, buf, buflen);
 }
 
 enum netlink_msg_status netlink_put_lsp_update_msg(struct nl_batch *bth,
