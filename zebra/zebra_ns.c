@@ -37,6 +37,11 @@ DECLARE_RBTREE_UNIQ(ifp_tree, struct ifp_tree_link, link, ifp_tree_cmp);
 
 static struct zebra_ns *dzns;
 
+void zebra_ns_free(struct zebra_ns *zns)
+{
+	XFREE(MTYPE_ZEBRA_NS, zns);
+}
+
 static int ifp_tree_cmp(const struct ifp_tree_link *a, const struct ifp_tree_link *b)
 {
 	return (a->ifindex - b->ifindex);
@@ -265,7 +270,14 @@ static int zebra_ns_delete(struct ns *ns)
 		XFREE(MTYPE_ZNS_IFP, link);
 	}
 
-	XFREE(MTYPE_ZEBRA_NS, ns->info);
+	ns->info = NULL;
+	zns->ns = NULL;
+	if (zns == dzns)
+		dzns = NULL;
+	if (zns->dplane_info)
+		zebra_dplane_ns_delete(zns);
+	else
+		zebra_ns_free(zns);
 	return 0;
 }
 
