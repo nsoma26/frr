@@ -4346,6 +4346,7 @@ ssize_t netlink_macfdb_update_ctx(struct zebra_dplane_ctx *ctx, void *data,
 	state = NUD_REACHABLE;
 
 	update_flags = dplane_ctx_mac_get_update_flags(ctx);
+	nhg_id = dplane_ctx_mac_get_nhg_id(ctx);
 	if (update_flags & DPLANE_MAC_REMOTE) {
 		flags |= NTF_SELF;
 		if (dplane_ctx_mac_is_sticky(ctx)) {
@@ -4356,6 +4357,11 @@ ssize_t netlink_macfdb_update_ctx(struct zebra_dplane_ctx *ctx, void *data,
 		} else {
 			flags |= NTF_EXT_LEARNED;
 		}
+		/* A VXLAN FDB entry with an NHG must not be dynamic. The kernel
+		 * rejects NUD_REACHABLE for these entries and may age the FDB out.
+		 */
+		if (nhg_id)
+			state = NUD_NOARP;
 		/* if it was static-local previously we need to clear the
 		 * notify flags on replace with remote
 		 */
@@ -4376,7 +4382,6 @@ ssize_t netlink_macfdb_update_ctx(struct zebra_dplane_ctx *ctx, void *data,
 		nfy = true;
 	}
 
-	nhg_id = dplane_ctx_mac_get_nhg_id(ctx);
 	vtep_ip = *(dplane_ctx_mac_get_vtep_ip(ctx));
 
 	if (IS_ZEBRA_DEBUG_KERNEL) {
